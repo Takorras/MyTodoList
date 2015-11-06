@@ -5,26 +5,43 @@ from datetime import datetime,timedelta
 from pickle import dump,load
 from todocontainer import Todocontainer
 from todo import Todoitem
+import cmd
 
 DUMPFILE="todo.dat"
+
+class Todoshell(cmd.Cmd):
+	intro="welcome to the todo shell. Type help or ? to list commands.\n"
+	prompt=">>>"
+
+	def __init__(self):
+		cmd.Cmd.__init__(self)
+		self.app=Todoapp()
+
+	def emptyline(self):
+		pass
+
+	def do_show(self,arg):
+		"show remain your tasks"
+		self.app.itemconfirmation()
+
+	def do_showf(self,arg):
+		"show finished tasks"
+		self.app.itemconfirmation_finished()
+
+	def do_add(self,arg):
+		"add new task to this todo-list"
+		self.app.createitem()
+
+	def do_exit(self,arg):
+		"Stop using todoapp,close the todoshell"
+		print("Thank you 4 using!")
+		return True
 
 class Todoapp:
 	def __init__(self):
 		self.load()
 
-	def main(self):
-		while True:
-			print("\n[1]show tasks、[2]add task、[3]exit")
-			operation=int(input("enter number :"))
-			if operation==1:
-				self.itemconfirmation()
-			elif operation==2:
-				self.createitem()
-			else:
-				print("Thanks! bye!")
-				break
-
-	# 未消化todoitemの表示
+	# print remaining todoitem
 	def itemconfirmation(self):
 		self.todos.sort()
 		for todo in self.todos.get_remaining_todos():
@@ -34,14 +51,14 @@ class Todoapp:
 				t='*!* '+t
 			print("{0}\n-->{1}\n-->...{2}".format(d,t,todo.description))
 
-	# todoitemを生成する
+	# create todoitem
 	def createitem(self):
 		todo=Todoitem("","",datetime.now())
 		self.entry_item(todo)
 		self.todos+=todo
 		self.save()
 
-	# 入力した内容をtodoitemに反映
+	# reflect entering item to todoitem
 	def entry_item(self,todo):
 		todo.title=input("enter task's title :")
 		todo.description=input("enter task's description :")
@@ -53,7 +70,14 @@ class Todoapp:
 			else:
 				break
 
-	# データのロード
+	def itemconfirmation_finished(self):
+		self.todos.sort()
+		for todo in self.todos.get_finished_todos():
+			d=todo.duedate
+			t=todo.title
+			print("{0}\n-->{1}\n-->...{2}".format(d,t,todo.description))
+
+	# load date
 	def load(self):
 		try:
 			f=open(DUMPFILE,'rb')
@@ -62,12 +86,11 @@ class Todoapp:
 		except IOError:
 			self.todos=Todocontainer()
 
-	# データの保存
+	# save date
 	def save(self):
 		f=open(DUMPFILE,'wb')
 		dump(self.todos,f)
 		f.close()
 
 if __name__=="__main__":
-	app=Todoapp()
-	app.main()
+	Todoshell().cmdloop()
